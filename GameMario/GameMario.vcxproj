@@ -136,10 +136,14 @@
   <ItemGroup>
     <ClCompile Include="debug.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Sprite.cpp" />
+    <ClCompile Include="Sprites.cpp" />
     <ClCompile Include="Textures.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="debug.h" />
+    <ClInclude Include="Sprite.h" />
+    <ClInclude Include="Sprites.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="Textures.h" />
   </ItemGroup>
