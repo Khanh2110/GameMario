@@ -1,5 +1,4 @@
 #pragma once
-
 #include <windows.h>
 #include <signal.h>
 #include <string.h>

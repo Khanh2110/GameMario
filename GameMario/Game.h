@@ -4,9 +4,7 @@
 #include <d3dx10.h>
 
 #include "Texture.h"
-
-#define MAX_FRAME_RATE 60
-
+#include "define.h"
 /*
 	Our simple game framework
 */

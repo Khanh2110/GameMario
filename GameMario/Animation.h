@@ -6,9 +6,7 @@
 #include "Sprites.h"
 #include "AnimationFrame.h"
 
-
 using namespace std;
-
 class CAnimation
 {
 	ULONGLONG lastFrameTime;

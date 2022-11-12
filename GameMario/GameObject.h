@@ -6,7 +6,6 @@
 #include "Sprites.h"
 
 using namespace std;
-
 class CGameObject
 {
 protected:
