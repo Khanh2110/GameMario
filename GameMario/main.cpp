@@ -4,60 +4,61 @@ HOW TO INSTALL Microsoft.DXSDK.D3DX
 2) execute command :  Install-Package Microsoft.DXSDK.D3DX
 ================================================================ */
 
-#include <windows.h>
+/* =============================================================
+Key functions:
+	CCollision::SweptAABB
+	CCollision::SweptAABBEx
+	CCollision::Scan
+	CCollision::Filter
+	CCollision::Process
+	CGameObject::GetBoundingBox
 
+================================================================ */
+
+#include <windows.h>
 #include <d3d10.h>
 #include <d3dx10.h>
-
-#include <signal.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <time.h>
-#include <stdlib.h>
+#include <list>
 
 #include "debug.h"
+#include "Game.h"
+#include "GameObject.h"
+#include "Textures.h"
+#include "Animation.h"
+#include "Animations.h"
 
-#define WINDOW_CLASS_NAME L"Mario"
-#define WINDOW_TITLE L"Mario"
-#define WINDOW_ICON_PATH L"brick.ico" 
+#include "Mario.h"
+#include "Brick.h"
+#include "Goomba.h"
+#include "Coin.h"
+#include "Platform.h"
 
-HWND hWnd = 0;
+#include "SampleKeyEventHandler.h"
 
-// Each color is from 0.0f to 1.0f  ( 0/255 to 255/255 ) 
-#define BACKGROUND_COLOR D3DXCOLOR(0.2f, 0.2f, 0.2f, 0.2f)
+#include "define.h"
 
-#define WINDOW_WIDTH 640
-#define WINDOW_HEIGHT 480
+#define WINDOW_CLASS_NAME L"SampleWindow"
+#define MAIN_WINDOW_TITLE L"04 - Collision"
+#define WINDOW_ICON_PATH L"mario.ico"
 
-#define MAX_FRAME_RATE 100
+#define BACKGROUND_COLOR D3DXCOLOR(200.0f/255, 200.0f/255, 255.0f/255, 0.0f)
 
-ID3D10Device* pD3DDevice = NULL;
-IDXGISwapChain* pSwapChain = NULL;
-ID3D10RenderTargetView* pRenderTargetView = NULL;
-
-int BackBufferWidth = 0;
-int BackBufferHeight = 0;
-
-#define TEXTURE_PATH_BRICK L"brick.png"
-#define BRICK_START_X 8.0f
-#define BRICK_START_Y 200.0f
-
-#define BRICK_START_VX 0.2f
-
-#define BRICK_WIDTH 16.0f
-#define BRICK_HEIGHT 16.0f
+#define SCREEN_WIDTH 320
+#define SCREEN_HEIGHT 240
 
 
-ID3D10Texture2D* texBrick = NULL;				// Texture object to store brick image
-ID3DX10Sprite* spriteObject = NULL;				// Sprite handling object 
+#define TEXTURES_DIR L"textures"
+#define TEXTURE_PATH_MARIO TEXTURES_DIR "\\mario_transparent.png"
+#define TEXTURE_PATH_MISC TEXTURES_DIR "\\misc_transparent.png"
+#define TEXTURE_PATH_ENEMY TEXTURES_DIR "\\enemies_transparent.png"
+#define TEXTURE_PATH_BBOX TEXTURES_DIR "\\bbox.png"
 
-D3DX10_SPRITE spriteBrick;
+CGame* game;
+CMario* mario;
 
-float brick_x = BRICK_START_X;
-float brick_vx = BRICK_START_VX;
-float brick_y = BRICK_START_Y;
+list<LPGAMEOBJECT> objects;
 
+CSampleKeyHandler* keyHandler;
 
 LRESULT CALLBACK WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -72,256 +73,475 @@ LRESULT CALLBACK WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-void InitDirectX(HWND hWnd)
+void LoadAssetsMario()
 {
+	CTextures* textures = CTextures::GetInstance();
+	CSprites* sprites = CSprites::GetInstance();
+	CAnimations* animations = CAnimations::GetInstance();
 
-	// retrieve client area width & height so that we can create backbuffer height & width accordingly 
-	RECT r;
-	GetClientRect(hWnd, &r);
+	LPTEXTURE texMario = textures->Get(ID_TEX_MARIO);
 
-	BackBufferWidth = r.right + 1;
-	BackBufferHeight = r.bottom + 1;
+	// IDLE
+	sprites->Add(ID_SPRITE_MARIO_BIG_IDLE_RIGHT + 1, 246, 154, 259, 181, texMario);
+	sprites->Add(ID_SPRITE_MARIO_BIG_IDLE_LEFT + 1, 186, 154, 199, 181, texMario);
 
+	// WALKING LEFT
+	sprites->Add(ID_SPRITE_MARIO_BIG_WALKING_RIGHT + 2, 275, 154, 290, 181, texMario);
+	sprites->Add(ID_SPRITE_MARIO_BIG_WALKING_RIGHT + 3, 304, 154, 321, 181, texMario);
 
-	// Create & clear the DXGI_SWAP_CHAIN_DESC structure
-	DXGI_SWAP_CHAIN_DESC swapChainDesc;
-	ZeroMemory(&swapChainDesc, sizeof(swapChainDesc));
+	// WALKING RIGHT
+	sprites->Add(ID_SPRITE_MARIO_BIG_WALKING_LEFT + 2, 155, 154, 170, 181, texMario);
+	sprites->Add(ID_SPRITE_MARIO_BIG_WALKING_LEFT + 3, 125, 154, 140, 181, texMario);
 
-	// Fill in the needed values
-	swapChainDesc.BufferCount = 1;
-	swapChainDesc.BufferDesc.Width = BackBufferWidth;
-	swapChainDesc.BufferDesc.Height = BackBufferHeight;
-	swapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	swapChainDesc.BufferDesc.RefreshRate.Numerator = 60;
-	swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
-	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	swapChainDesc.OutputWindow = hWnd;
-	swapChainDesc.SampleDesc.Count = 1;
-	swapChainDesc.SampleDesc.Quality = 0;
-	swapChainDesc.Windowed = TRUE;
+	// RUNNING RIGHT 
+	sprites->Add(ID_SPRITE_MARIO_BIG_RUNNING_RIGHT + 1, 334, 154, 355, 181, texMario);
+	sprites->Add(ID_SPRITE_MARIO_BIG_RUNNING_RIGHT + 2, 334, 154, 355, 181, texMario);
+	sprites->Add(ID_SPRITE_MARIO_BIG_RUNNING_RIGHT + 3, 392, 154, 413, 181, texMario);
 
-	// Create the D3D device and the swap chain
-	HRESULT hr = D3D10CreateDeviceAndSwapChain(NULL,
-		D3D10_DRIVER_TYPE_REFERENCE,
-		NULL,
-		0,
-		D3D10_SDK_VERSION,
-		&swapChainDesc,
-		&pSwapChain,
-		&pD3DDevice);
+	// RUNNING LEFT
+	sprites->Add(ID_SPRITE_MARIO_BIG_RUNNING_LEFT + 1, 91, 154, 112, 181, texMario);
+	sprites->Add(ID_SPRITE_MARIO_BIG_RUNNING_LEFT + 2, 65, 154, 86, 181, texMario);
+	sprites->Add(ID_SPRITE_MARIO_BIG_RUNNING_LEFT + 3, 34, 154, 55, 181, texMario);
 
-	if (hr != S_OK)
-	{
-		DebugOut((wchar_t*)L"[ERROR] D3D10CreateDeviceAndSwapChain has failed %s %d", _W(__FILE__), __LINE__);
-		return;
-	}
+	// JUMP WALK RIGHT & LEFT 
+	sprites->Add(ID_SPRITE_MARIO_BIG_JUMP_WALK_RIGHT + 1, 395, 275, 412, 302, texMario);
+	sprites->Add(ID_SPRITE_MARIO_BIG_JUMP_WALK_LEFT + 1, 35, 275, 52, 302, texMario);
 
-	// Get the back buffer from the swapchain
-	ID3D10Texture2D* pBackBuffer;
-	hr = pSwapChain->GetBuffer(0, __uuidof(ID3D10Texture2D), (LPVOID*)&pBackBuffer);
-	if (hr != S_OK)
-	{
-		DebugOut((wchar_t*)L"[ERROR] pSwapChain->GetBuffer has failed %s %d", _W(__FILE__), __LINE__);
-		return;
-	}
+	// JUMP RUN RIGHT & LEFT 
+	sprites->Add(ID_SPRITE_MARIO_BIG_JUMP_RUN_RIGHT + 1, 394, 195, 413, 222, texMario);
+	sprites->Add(ID_SPRITE_MARIO_BIG_JUMP_RUN_LEFT + 1, 35, 195, 52, 222, texMario);
 
-	// create the render target view
-	hr = pD3DDevice->CreateRenderTargetView(pBackBuffer, NULL, &pRenderTargetView);
+	// SIT RIGHT/LEFT
+	sprites->Add(ID_SPRITE_MARIO_BIG_SIT_RIGHT + 1, 426, 239, 441, 256, texMario);
+	sprites->Add(ID_SPRITE_MARIO_BIG_SIT_LEFT + 1, 5, 239, 20, 256, texMario);
 
-	// release the back buffer
-	pBackBuffer->Release();
+	// BRACING RIGHT/LEFT
+	sprites->Add(ID_SPRITE_MARIO_BIG_BRACE_RIGHT + 1, 425, 154, 442, 181, texMario);
+	sprites->Add(ID_SPRITE_MARIO_BIG_BRACE_LEFT + 1, 5, 154, 22, 181, texMario);
 
-	// Make sure the render target view was created successfully
-	if (hr != S_OK)
-	{
-		DebugOut((wchar_t*)L"[ERROR] CreateRenderTargetView has failed %s %d", _W(__FILE__), __LINE__);
-		return;
-	}
+	// MARIO DIE
+	sprites->Add(ID_SPRITE_MARIO_DIE + 1, 215, 120, 231, 135, texMario);
 
-	// set the render target
-	pD3DDevice->OMSetRenderTargets(1, &pRenderTargetView, NULL);
+	// SMALL MARIO 
+	sprites->Add(ID_SPRITE_MARIO_SMALL_IDLE_RIGHT + 1, 247, 0, 259, 15, texMario);
+	sprites->Add(ID_SPRITE_MARIO_SMALL_IDLE_LEFT + 1, 187, 0, 198, 15, texMario);
 
-	// create and set the viewport
-	D3D10_VIEWPORT viewPort;
-	viewPort.Width = BackBufferWidth;
-	viewPort.Height = BackBufferHeight;
-	viewPort.MinDepth = 0.0f;
-	viewPort.MaxDepth = 1.0f;
-	viewPort.TopLeftX = 0;
-	viewPort.TopLeftY = 0;
-	pD3DDevice->RSSetViewports(1, &viewPort);
+	sprites->Add(ID_SPRITE_MARIO_SMALL_WALKING_RIGHT + 2, 275, 0, 291, 15, texMario);
+	sprites->Add(ID_SPRITE_MARIO_SMALL_WALKING_RIGHT + 3, 306, 0, 320, 15, texMario);
 
+	sprites->Add(ID_SPRITE_MARIO_SMALL_WALKING_LEFT + 2, 155, 0, 170, 15, texMario);
+	sprites->Add(ID_SPRITE_MARIO_SMALL_WALKING_LEFT + 3, 125, 0, 139, 15, texMario);
 
-	// create the sprite object to handle sprite drawing 
-	hr = D3DX10CreateSprite(pD3DDevice, 0, &spriteObject);
+	sprites->Add(ID_SPRITE_MARIO_SMALL_RUNNING_RIGHT + 1, 275, 0, 275 + 15, 15, texMario);
+	sprites->Add(ID_SPRITE_MARIO_SMALL_RUNNING_RIGHT + 2, 306, 0, 306 + 15, 15, texMario);
+	sprites->Add(ID_SPRITE_MARIO_SMALL_RUNNING_RIGHT + 3, 335, 0, 335 + 15, 15, texMario);
 
-	// Make sure the sprite creation was successful
-	if (hr != S_OK)
-	{
-		DebugOut((wchar_t*)L"[ERROR] D3DX10CreateSprite has failed %s %d", _W(__FILE__), __LINE__);
-		return;
-	}
+	sprites->Add(ID_SPRITE_MARIO_SMALL_RUNNING_LEFT + 1, 155, 0, 155 + 15, 15, texMario);
+	sprites->Add(ID_SPRITE_MARIO_SMALL_RUNNING_LEFT + 2, 125, 0, 125 + 15, 15, texMario);
+	sprites->Add(ID_SPRITE_MARIO_SMALL_RUNNING_LEFT + 3, 95, 0, 95 + 15, 15, texMario);
 
-	D3DXMATRIX matProjection;
+	sprites->Add(ID_SPRITE_MARIO_SMALL_BRACE_LEFT + 1, 6, 0, 6 + 13, 15, texMario);
+	sprites->Add(ID_SPRITE_MARIO_SMALL_BRACE_RIGHT + 1, 426, 0, 426 + 13, 15, texMario);
 
-	// Create the projection matrix using the values in the viewport
-	D3DXMatrixOrthoOffCenterLH(&matProjection,
-		(float)viewPort.TopLeftX,
-		(float)viewPort.Width,
-		(float)viewPort.TopLeftY,
-		(float)viewPort.Height,
-		0.1f,
-		10);
-	hr = spriteObject->SetProjectionTransform(&matProjection);
+	sprites->Add(ID_SPRITE_MARIO_SMALL_JUMP_WALK_LEFT + 1, 35, 80, 35 + 15, 80 + 15, texMario);
+	sprites->Add(ID_SPRITE_MARIO_SMALL_JUMP_WALK_RIGHT + 1, 395, 80, 395 + 15, 80 + 15, texMario);
 
+	sprites->Add(ID_SPRITE_MARIO_SMALL_JUMP_RUN_LEFT + 1, 65, 40, 65 + 15, 40 + 15, texMario);
+	sprites->Add(ID_SPRITE_MARIO_SMALL_JUMP_RUN_RIGHT + 1, 365, 40, 365 + 15, 40 + 15, texMario);
 
+	LPANIMATION ani;
 
+	ani = new CAnimation(100);
+	ani->Add(ID_SPRITE_MARIO_BIG_IDLE_RIGHT + 1);
+	animations->Add(ID_ANI_MARIO_IDLE_RIGHT, ani);
 
-	DebugOut((wchar_t*)L"[INFO] InitDirectX has been successful\n");
+	ani = new CAnimation(100);
+	ani->Add(ID_SPRITE_MARIO_BIG_IDLE_LEFT + 1);
+	animations->Add(ID_ANI_MARIO_IDLE_LEFT, ani);
 
-	return;
+	ani = new CAnimation(100);
+	ani->Add(ID_SPRITE_MARIO_BIG_IDLE_RIGHT + 1);
+	ani->Add(ID_SPRITE_MARIO_BIG_WALKING_RIGHT + 2);
+	ani->Add(ID_SPRITE_MARIO_BIG_WALKING_RIGHT + 3);
+	animations->Add(ID_ANI_MARIO_WALKING_RIGHT, ani);
+
+	ani = new CAnimation(100);
+	ani->Add(ID_SPRITE_MARIO_BIG_IDLE_LEFT + 1);
+	ani->Add(ID_SPRITE_MARIO_BIG_WALKING_LEFT + 2);
+	ani->Add(ID_SPRITE_MARIO_BIG_WALKING_LEFT + 3);
+	animations->Add(ID_ANI_MARIO_WALKING_LEFT, ani);
+
+	ani = new CAnimation(50);
+	ani->Add(ID_SPRITE_MARIO_BIG_RUNNING_RIGHT + 1);
+	ani->Add(ID_SPRITE_MARIO_BIG_RUNNING_RIGHT + 2);
+	ani->Add(ID_SPRITE_MARIO_BIG_RUNNING_RIGHT + 3);
+	animations->Add(ID_ANI_MARIO_RUNNING_RIGHT, ani);
+
+	// Mario runs faster hence animation speed should be faster
+	ani = new CAnimation(50);
+	ani->Add(ID_SPRITE_MARIO_BIG_RUNNING_LEFT + 1);
+	ani->Add(ID_SPRITE_MARIO_BIG_RUNNING_LEFT + 2);
+	ani->Add(ID_SPRITE_MARIO_BIG_RUNNING_LEFT + 3);
+	animations->Add(ID_ANI_MARIO_RUNNING_LEFT, ani);
+
+	ani = new CAnimation(100);
+	ani->Add(ID_SPRITE_MARIO_BIG_JUMP_WALK_RIGHT + 1);
+	animations->Add(ID_ANI_MARIO_JUMP_WALK_RIGHT, ani);
+
+	ani = new CAnimation(100);
+	ani->Add(ID_SPRITE_MARIO_BIG_JUMP_WALK_LEFT + 1);
+	animations->Add(ID_ANI_MARIO_JUMP_WALK_LEFT, ani);
+
+	ani = new CAnimation(100);
+	ani->Add(ID_SPRITE_MARIO_BIG_JUMP_RUN_RIGHT + 1);
+	animations->Add(ID_ANI_MARIO_JUMP_RUN_RIGHT, ani);
+
+	ani = new CAnimation(100);
+	ani->Add(ID_SPRITE_MARIO_BIG_JUMP_RUN_LEFT + 1);
+	animations->Add(ID_ANI_MARIO_JUMP_RUN_LEFT, ani);
+
+	ani = new CAnimation(100);
+	ani->Add(ID_SPRITE_MARIO_BIG_SIT_RIGHT + 1);
+	animations->Add(ID_ANI_MARIO_SIT_RIGHT, ani);
+
+	ani = new CAnimation(100);
+	ani->Add(ID_SPRITE_MARIO_BIG_SIT_LEFT + 1);
+	animations->Add(ID_ANI_MARIO_SIT_LEFT, ani);
+
+	ani = new CAnimation(100);
+	ani->Add(ID_SPRITE_MARIO_BIG_BRACE_RIGHT + 1);
+	animations->Add(ID_ANI_MARIO_BRACE_RIGHT, ani);
+
+	ani = new CAnimation(100);
+	ani->Add(ID_SPRITE_MARIO_BIG_BRACE_LEFT + 1);
+	animations->Add(ID_ANI_MARIO_BRACE_LEFT, ani);
+
+	ani = new CAnimation(100);
+	ani->Add(ID_SPRITE_MARIO_DIE + 1);
+	animations->Add(ID_ANI_MARIO_DIE, ani);
+
+	//
+	// SMALL MARIO 
+	//
+	ani = new CAnimation(100);
+	ani->Add(ID_SPRITE_MARIO_SMALL_IDLE_RIGHT + 1);
+	animations->Add(ID_ANI_MARIO_SMALL_IDLE_RIGHT, ani);
+
+	ani = new CAnimation(100);
+	ani->Add(ID_SPRITE_MARIO_SMALL_IDLE_RIGHT + 1);
+	ani->Add(ID_SPRITE_MARIO_SMALL_WALKING_RIGHT + 2);
+	ani->Add(ID_SPRITE_MARIO_SMALL_WALKING_RIGHT + 3);
+	animations->Add(ID_ANI_MARIO_SMALL_WALKING_RIGHT, ani);
+
+	ani = new CAnimation(100);
+	ani->Add(ID_SPRITE_MARIO_SMALL_IDLE_LEFT + 1);
+	animations->Add(ID_ANI_MARIO_SMALL_IDLE_LEFT, ani);
+
+	ani = new CAnimation(100);
+	ani->Add(ID_SPRITE_MARIO_SMALL_IDLE_LEFT + 1);
+	ani->Add(ID_SPRITE_MARIO_SMALL_WALKING_LEFT + 2);
+	ani->Add(ID_SPRITE_MARIO_SMALL_WALKING_LEFT + 3);
+	animations->Add(ID_ANI_MARIO_SMALL_WALKING_LEFT, ani);
+
+	ani = new CAnimation(50);
+	ani->Add(ID_SPRITE_MARIO_SMALL_RUNNING_RIGHT + 1);
+	ani->Add(ID_SPRITE_MARIO_SMALL_RUNNING_RIGHT + 2);
+	ani->Add(ID_SPRITE_MARIO_SMALL_RUNNING_RIGHT + 3);
+	animations->Add(ID_ANI_MARIO_SMALL_RUNNING_RIGHT, ani);
+
+	ani = new CAnimation(50);
+	ani->Add(ID_SPRITE_MARIO_SMALL_RUNNING_LEFT + 1);
+	ani->Add(ID_SPRITE_MARIO_SMALL_RUNNING_LEFT + 2);
+	ani->Add(ID_SPRITE_MARIO_SMALL_RUNNING_LEFT + 3);
+	animations->Add(ID_ANI_MARIO_SMALL_RUNNING_LEFT, ani);
+
+	ani = new CAnimation(100);
+	ani->Add(ID_SPRITE_MARIO_SMALL_BRACE_LEFT + 1);
+	animations->Add(ID_ANI_MARIO_SMALL_BRACE_LEFT, ani);
+
+	ani = new CAnimation(100);
+	ani->Add(ID_SPRITE_MARIO_SMALL_BRACE_RIGHT + 1);
+	animations->Add(ID_ANI_MARIO_SMALL_BRACE_RIGHT, ani);
+
+	ani = new CAnimation(100);
+	ani->Add(ID_SPRITE_MARIO_SMALL_JUMP_WALK_RIGHT + 1);
+	animations->Add(ID_ANI_MARIO_SMALL_JUMP_WALK_RIGHT, ani);
+
+	ani = new CAnimation(100);
+	ani->Add(ID_SPRITE_MARIO_SMALL_JUMP_WALK_LEFT + 1);
+	animations->Add(ID_ANI_MARIO_SMALL_JUMP_WALK_LEFT, ani);
+
+	ani = new CAnimation(100);
+	ani->Add(ID_SPRITE_MARIO_SMALL_JUMP_RUN_LEFT + 1);
+	animations->Add(ID_ANI_MARIO_SMALL_JUMP_RUN_LEFT, ani);
+
+	ani = new CAnimation(100);
+	ani->Add(ID_SPRITE_MARIO_SMALL_JUMP_RUN_RIGHT + 1);
+	animations->Add(ID_ANI_MARIO_SMALL_JUMP_RUN_RIGHT, ani);
+}
+
+void LoadAssetsGoomba()
+{
+	CTextures* textures = CTextures::GetInstance();
+	CSprites* sprites = CSprites::GetInstance();
+	CAnimations* animations = CAnimations::GetInstance();
+
+	LPTEXTURE texEnemy = textures->Get(ID_TEX_ENEMY);
+
+	sprites->Add(ID_SPRITE_GOOMBA_WALK + 1, 4, 13, 22, 30, texEnemy);
+	sprites->Add(ID_SPRITE_GOOMBA_WALK + 2, 24, 13, 42, 30, texEnemy);
+
+	sprites->Add(ID_SPRITE_GOOMBA_DIE + 1, 44, 19, 62, 30, texEnemy);
+
+	LPANIMATION ani = new CAnimation(100);
+	ani->Add(ID_SPRITE_GOOMBA_WALK + 1);
+	ani->Add(ID_SPRITE_GOOMBA_WALK + 2);
+	animations->Add(ID_ANI_GOOMBA_WALKING, ani);
+
+	ani = new CAnimation(100);
+	ani->Add(ID_SPRITE_GOOMBA_DIE + 1);
+	animations->Add(ID_ANI_GOOMBA_DIE, ani);
+
+}
+void LoadAssetsBrick()
+{
+	CTextures* textures = CTextures::GetInstance();
+	CSprites* sprites = CSprites::GetInstance();
+	CAnimations* animations = CAnimations::GetInstance();
+
+	LPTEXTURE texMisc = textures->Get(ID_TEX_MISC);
+	sprites->Add(ID_SPRITE_BRICK + 1, 372, 153, 372 + 15, 153 + 15, texMisc);
+
+	LPANIMATION ani = new CAnimation(100);
+	ani->Add(ID_SPRITE_BRICK + 1);
+	animations->Add(ID_ANI_BRICK, ani);
+}
+void LoadAssetsCoin()
+{
+	CTextures* textures = CTextures::GetInstance();
+	CSprites* sprites = CSprites::GetInstance();
+	CAnimations* animations = CAnimations::GetInstance();
+
+	LPTEXTURE texMisc = textures->Get(ID_TEX_MISC);
+
+	sprites->Add(ID_SPRITE_COIN + 1, 303, 99, 303 + 9, 99 + 15, texMisc);
+	sprites->Add(ID_SPRITE_COIN + 2, 321, 99, 321 + 9, 99 + 15, texMisc);
+	sprites->Add(ID_SPRITE_COIN + 3, 338, 99, 338 + 9, 99 + 15, texMisc);
+
+	LPANIMATION ani = new CAnimation(300);
+	ani->Add(ID_SPRITE_COIN + 1);
+	ani->Add(ID_SPRITE_COIN + 2);
+	ani->Add(ID_SPRITE_COIN + 3);
+	animations->Add(ID_ANI_COIN, ani);
+}
+
+void LoadAssetsOther()
+{
+	CTextures* textures = CTextures::GetInstance();
+	CSprites* sprites = CSprites::GetInstance();
+
+	LPTEXTURE texMisc = textures->Get(ID_TEX_MISC);
+	sprites->Add(ID_SPRITE_CLOUD_BEGIN, 390, 117, 390 + 15, 117 + 15, texMisc);
+	sprites->Add(ID_SPRITE_CLOUD_MIDDLE, 408, 117, 408 + 15, 117 + 15, texMisc);
+	sprites->Add(ID_SPRITE_CLOUD_END, 426, 117, 426 + 15, 117 + 15, texMisc);
+
 }
 
 /*
-	Load game resources. In this example, we only load a brick image
+	Load all game resources
+	In this example: load textures, sprites, animations and mario object
+
+	TO-DO: Improve this function by loading texture,sprite,animation,object from file
 */
 void LoadResources()
 {
-	ID3D10Resource* pD3D10Resource = NULL;
+	CTextures* textures = CTextures::GetInstance();
 
-	// Loads the texture into a temporary ID3D10Resource object
-	HRESULT hr = D3DX10CreateTextureFromFile(pD3DDevice,
-		TEXTURE_PATH_BRICK,
-		NULL,
-		NULL,
-		&pD3D10Resource,
-		NULL);
+	textures->Add(ID_TEX_MARIO, TEXTURE_PATH_MARIO);
+	textures->Add(ID_TEX_ENEMY, TEXTURE_PATH_ENEMY);
+	textures->Add(ID_TEX_MISC, TEXTURE_PATH_MISC);
+	textures->Add(ID_TEX_BBOX, TEXTURE_PATH_BBOX);
 
-	// Make sure the texture was loaded successfully
-	if (FAILED(hr))
+	LoadAssetsMario();
+	LoadAssetsGoomba();
+	LoadAssetsBrick();
+	LoadAssetsCoin();
+	LoadAssetsOther();
+}
+
+void ClearScene()
+{
+	list<LPGAMEOBJECT>::iterator it;
+	for (it = objects.begin(); it != objects.end(); it++)
 	{
-		DebugOut((wchar_t*)L"[ERROR] Failed to load texture file: %s \n", TEXTURE_PATH_BRICK);
-		return;
+		delete (*it);
+	}
+	objects.clear();
+}
+
+#define MARIO_START_X 20.0f
+#define MARIO_START_Y 10.0f
+
+#define BRICK_X 0.0f
+#define GOOMBA_X 200.0f
+#define COIN_X 100.0f
+
+#define BRICK_Y GROUND_Y + 20.0f
+#define NUM_BRICKS 70
+
+/*
+* Reload all objects of current scene
+* NOTE: super bad way to build a scene! We need to load a scene from data instead of hard-coding like this
+*/
+void Reload()
+{
+	ClearScene();
+
+	// Main ground
+	for (int i = 0; i < NUM_BRICKS; i++)
+	{
+		CBrick* b = new CBrick(i * BRICK_WIDTH * 1.0f, BRICK_Y);
+		objects.push_back(b);
 	}
 
-	// Translates the ID3D10Resource object into a ID3D10Texture2D object
-	pD3D10Resource->QueryInterface(__uuidof(ID3D10Texture2D), (LPVOID*)&texBrick);
-	pD3D10Resource->Release();
-
-	if (!texBrick) {
-		DebugOut((wchar_t*)L"[ERROR] Failed to convert from ID3D10Resource to ID3D10Texture2D \n");
-		return;
+	// Short, low platform
+	for (int i = 1; i < 3; i++)
+	{
+		CBrick* b = new CBrick(i * BRICK_WIDTH * 1.0f, BRICK_Y - 44.0f);
+		objects.push_back(b);
 	}
 
-	// Get the texture details
-	D3D10_TEXTURE2D_DESC desc;
-	texBrick->GetDesc(&desc);
+	// Vertical column 1
+	for (int i = 0; i < 10; i++)
+	{
+		CBrick* b = new CBrick(0, BRICK_Y - i * BRICK_WIDTH);
+		objects.push_back(b);
+	}
 
-	// Create a shader resource view of the texture
-	D3D10_SHADER_RESOURCE_VIEW_DESC SRVDesc;
+	// Vertical column 2
+	for (int i = 1; i < 3; i++)
+	{
+		CBrick* b = new CBrick(BRICK_X + 300.0f, BRICK_Y - i * BRICK_WIDTH);
+		objects.push_back(b);
+	}
 
-	// Clear out the shader resource view description structure
-	ZeroMemory(&SRVDesc, sizeof(SRVDesc));
+	// Vertical column 3
+	for (int i = 1; i < 4; i++)
+	{
+		CBrick* b = new CBrick(BRICK_X + 400.0f, BRICK_Y - i * BRICK_WIDTH);
+		objects.push_back(b);
+	}
 
-	// Set the texture format
-	SRVDesc.Format = desc.Format;
-	// Set the type of resource
-	SRVDesc.ViewDimension = D3D10_SRV_DIMENSION_TEXTURE2D;
-	SRVDesc.Texture2D.MipLevels = desc.MipLevels;
+	// Vertical column 4
+	for (int i = 1; i < 5; i++)
+	{
+		CBrick* b = new CBrick(BRICK_X + 500.0f, BRICK_Y - i * BRICK_WIDTH);
+		objects.push_back(b);
+	}
 
-	ID3D10ShaderResourceView* gSpriteTextureRV = NULL;
+	// Second cloud platform 
+	CPlatform* p = new CPlatform(90.0f, GROUND_Y - 74.0f,
+		16, 15, 16, ID_SPRITE_CLOUD_BEGIN, ID_SPRITE_CLOUD_MIDDLE, ID_SPRITE_CLOUD_END);
+	objects.push_back(p);
 
-	pD3DDevice->CreateShaderResourceView(texBrick, &SRVDesc, &gSpriteTextureRV);
+	mario = new CMario(MARIO_START_X, MARIO_START_Y);
+	objects.push_back(mario);
 
-	// Set the sprite’s shader resource view
-	spriteBrick.pTexture = gSpriteTextureRV;
+	for (int j = 0; j < 4; j++)
+	{
+		CGoomba* goomba = new CGoomba(GOOMBA_X + j * 60, GROUND_Y - 120.0f);
+		objects.push_back(goomba);
+	}
 
-	// top-left location in U,V coords
-	spriteBrick.TexCoord.x = 0;
-	spriteBrick.TexCoord.y = 0;
+	// COINS 
+	for (int i = 0; i < 10; i++)
+	{
+		CCoin* c = new CCoin(COIN_X + i * (COIN_WIDTH * 2), GROUND_Y - 96.0f);
+		objects.push_back(c);
+	}
+}
 
-	// Determine the texture size in U,V coords
-	spriteBrick.TexSize.x = 1.0f;
-	spriteBrick.TexSize.y = 1.0f;
+bool IsGameObjectDeleted(const LPGAMEOBJECT& o) { return o == NULL; }
 
-	// Set the texture index. Single textures will use 0
-	spriteBrick.TextureIndex = 0;
-
-	// The color to apply to this sprite, full color applies white.
-	spriteBrick.ColorModulate = D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f);
-
-
-	DebugOut((wchar_t*)L"[INFO] Texture loaded Ok: %s \n", TEXTURE_PATH_BRICK);
+void PurgeDeletedObjects()
+{
+	list<LPGAMEOBJECT>::iterator it;
+	for (it = objects.begin(); it != objects.end(); it++)
+	{
+		LPGAMEOBJECT o = *it;
+		if (o->IsDeleted())
+		{
+			delete o;
+			*it = NULL;
+		}
+	}
+	objects.erase(
+		std::remove_if(objects.begin(), objects.end(), IsGameObjectDeleted),
+		objects.end());
 }
 
 /*
 	Update world status for this frame
 	dt: time period between beginning of last frame and beginning of this frame
-
-	IMPORTANT: no render-related code should be used inside this function.
 */
 void Update(DWORD dt)
 {
-	//Uncomment the whole function to see the brick moves and bounces back when hitting left and right edges
-	//brick_x++;
-
-	brick_x += brick_vx * dt;
-
-	// NOTE: BackBufferWidth is indeed related to rendering!!
-	float right_edge = BackBufferWidth - BRICK_WIDTH;
-
-	if (brick_x < 0 || brick_x > right_edge) {
-
-		brick_vx = -brick_vx;
-
-		//	//Why not having these logics would make the brick disappear sometimes?  
-		////	if (brick_x < 0)
-		////	{
-		////		brick_x = 0;
-		////	}
-		////	else if (brick_x > right_edge )
-		////	{
-		////		brick_x = right_edge;
-		////	}
+	// We know that Mario is the first object in the list hence we won't add him into the colliable object list
+	// TO-DO: This is a "dirty" way, need a more organized way 
+	vector<LPGAMEOBJECT> coObjects;
+	list<LPGAMEOBJECT>::iterator i;
+	for (i = objects.begin(); i != objects.end(); ++i)
+	{
+		coObjects.push_back(*i);
 	}
+
+	for (i = objects.begin(); i != objects.end(); ++i)
+	{
+		(*i)->Update(dt, &coObjects);
+	}
+
+	PurgeDeletedObjects();
+
+	// Update camera to follow mario
+	float cx, cy;
+	mario->GetPosition(cx, cy);
+
+	cx -= SCREEN_WIDTH / 2;
+	cy = 0;
+	//cy -= SCREEN_HEIGHT / 2;
+
+	if (cx < 0) cx = 0;
+
+	CGame::GetInstance()->SetCamPos(cx, cy);
 }
 
 /*
 	Render a frame
-	IMPORTANT: world status must NOT be changed during rendering
 */
 void Render()
 {
-	if (pD3DDevice != NULL)
+	CGame* g = CGame::GetInstance();
+
+	ID3D10Device* pD3DDevice = g->GetDirect3DDevice();
+	IDXGISwapChain* pSwapChain = g->GetSwapChain();
+	ID3D10RenderTargetView* pRenderTargetView = g->GetRenderTargetView();
+	ID3DX10Sprite* spriteHandler = g->GetSpriteHandler();
+
+	pD3DDevice->ClearRenderTargetView(pRenderTargetView, BACKGROUND_COLOR);
+
+	spriteHandler->Begin(D3DX10_SPRITE_SORT_TEXTURE);
+
+	FLOAT NewBlendFactor[4] = { 0,0,0,0 };
+	pD3DDevice->OMSetBlendState(g->GetAlphaBlending(), NewBlendFactor, 0xffffffff);
+
+	list<LPGAMEOBJECT>::iterator i;
+	for (i = objects.begin(); i != objects.end(); ++i)
 	{
-		// clear the target buffer
-		pD3DDevice->ClearRenderTargetView(pRenderTargetView, BACKGROUND_COLOR);
-
-		// start drawing the sprites
-		spriteObject->Begin(D3DX10_SPRITE_SORT_TEXTURE);
-
-		// The translation matrix to be created
-		D3DXMATRIX matTranslation;
-		// Create the translation matrix
-		D3DXMatrixTranslation(&matTranslation, brick_x, (BackBufferHeight - brick_y), 0.1f);
-
-		// Scale the sprite to its correct width and height
-		D3DXMATRIX matScaling;
-		D3DXMatrixScaling(&matScaling, BRICK_WIDTH, BRICK_HEIGHT, 1.0f);
-
-		// Setting the sprite’s position and size
-		spriteBrick.matWorld = (matScaling * matTranslation);
-
-		spriteObject->DrawSpritesImmediate(&spriteBrick, 1, 0, 0);
-
-		// Finish up and send the sprites to the hardware
-		spriteObject->End();
-
-		//DebugOutTitle((wchar_t*)L"%s (%0.1f,%0.1f) v:%0.1f", WINDOW_TITLE, brick_x, brick_y, brick_vx);
-
-		// display the next item in the swap chain
-		pSwapChain->Present(0, 0);
+		(*i)->Render();
 	}
+
+	spriteHandler->End();
+	pSwapChain->Present(0, 0);
 }
 
 HWND CreateGameWindow(HINSTANCE hInstance, int nCmdShow, int ScreenWidth, int ScreenHeight)
@@ -331,9 +551,6 @@ HWND CreateGameWindow(HINSTANCE hInstance, int nCmdShow, int ScreenWidth, int Sc
 
 	wc.style = CS_HREDRAW | CS_VREDRAW;
 	wc.hInstance = hInstance;
-
-	//Try this to see how the debug function prints out file and line 
-	//wc.hInstance = (HINSTANCE)-100; 
 
 	wc.lpfnWndProc = (WNDPROC)WinProc;
 	wc.cbClsExtra = 0;
@@ -350,7 +567,7 @@ HWND CreateGameWindow(HINSTANCE hInstance, int nCmdShow, int ScreenWidth, int Sc
 	HWND hWnd =
 		CreateWindow(
 			WINDOW_CLASS_NAME,
-			WINDOW_TITLE,
+			MAIN_WINDOW_TITLE,
 			WS_OVERLAPPEDWINDOW, // WS_EX_TOPMOST | WS_VISIBLE | WS_POPUP,
 			CW_USEDEFAULT,
 			CW_USEDEFAULT,
@@ -363,9 +580,9 @@ HWND CreateGameWindow(HINSTANCE hInstance, int nCmdShow, int ScreenWidth, int Sc
 
 	if (!hWnd)
 	{
+		OutputDebugString(L"[ERROR] CreateWindow failed");
 		DWORD ErrCode = GetLastError();
-		DebugOut((wchar_t*)L"[ERROR] CreateWindow failed! ErrCode: %d\nAt: %s %d \n", ErrCode, _W(__FILE__), __LINE__);
-		return 0;
+		return FALSE;
 	}
 
 	ShowWindow(hWnd, nCmdShow);
@@ -379,7 +596,7 @@ int Run()
 	MSG msg;
 	int done = 0;
 	ULONGLONG frameStart = GetTickCount64();
-	ULONGLONG tickPerFrame = 1000 / MAX_FRAME_RATE;
+	DWORD tickPerFrame = 1000 / MAX_FRAME_RATE;
 
 	while (!done)
 	{
@@ -395,46 +612,21 @@ int Run()
 
 		// dt: the time between (beginning of last frame) and now
 		// this frame: the frame we are about to render
-		ULONGLONG dt = now - frameStart;
+		DWORD dt = (DWORD)(now - frameStart);
 
 		if (dt >= tickPerFrame)
 		{
 			frameStart = now;
-			Update((DWORD)dt);
+
+			game->ProcessKeyboard();
+			Update(dt);
 			Render();
 		}
 		else
-			Sleep((DWORD)(tickPerFrame - dt));
+			Sleep(tickPerFrame - dt);
 	}
 
 	return 1;
-}
-
-void Cleanup()
-{
-	// release the rendertarget
-	if (pRenderTargetView)
-	{
-		pRenderTargetView->Release();
-	}
-	// release the swapchain
-	if (pSwapChain)
-	{
-		pSwapChain->Release();
-	}
-	// release the D3D Device
-	if (pD3DDevice)
-	{
-		pD3DDevice->Release();
-	}
-
-	if (spriteObject)
-	{
-		spriteObject->Release();
-		spriteObject = NULL;
-	}
-
-	DebugOut((wchar_t*)L"[INFO] Cleanup Ok\n");
 }
 
 int WINAPI WinMain(
@@ -442,16 +634,23 @@ int WINAPI WinMain(
 	_In_opt_ HINSTANCE hPrevInstance,
 	_In_ LPSTR lpCmdLine,
 	_In_ int nCmdShow
-)
-{
-	hWnd = CreateGameWindow(hInstance, nCmdShow, WINDOW_WIDTH, WINDOW_HEIGHT);
-	if (hWnd == 0) return 0;
+) {
+	HWND hWnd = CreateGameWindow(hInstance, nCmdShow, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-	InitDirectX(hWnd);
+	SetDebugWindow(hWnd);
+
+	game = CGame::GetInstance();
+	game->Init(hWnd, hInstance);
+
+	keyHandler = new CSampleKeyHandler();
+	game->InitKeyboard(keyHandler);
 
 	LoadResources();
+	Reload();
+
+	SetWindowPos(hWnd, 0, 0, 0, SCREEN_WIDTH * 2, SCREEN_HEIGHT * 2, SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOZORDER);
+
 	Run();
-	Cleanup();
 
 	return 0;
 }
