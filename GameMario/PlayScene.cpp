@@ -259,8 +259,10 @@ void CPlayScene::Update(DWORD dt)
 	cy -= game->GetBackBufferHeight() / 2;
 
 	if (cx < 0) cx = 0;
-
-	CGame::GetInstance()->SetCamPos(cx, 0.0f /*cy*/);
+	//if (cx +mario_width> map_width) cx = map_width-mario_width;
+	if (cy < 0) cy = 0;
+	//if (cy +mario_height> map_height) cy = map_height-mario_height;
+	CGame::GetInstance()->SetCamPos(cx, cy);
 
 	PurgeDeletedObjects();
 }
