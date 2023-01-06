@@ -199,6 +199,8 @@ void CCollision::Filter(LPGAMEOBJECT objSrc,
 		{
 			continue;
 		}
+		if (c->obj->IsBlocking() == 2 && !(c->ny < 0)) //for colox box
+			continue;
 
 		if (c->t < min_tx && c->nx != 0 && filterX == 1) {
 			min_tx = c->t; min_ix = i;

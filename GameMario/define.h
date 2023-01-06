@@ -18,6 +18,7 @@
 #define OBJECT_TYPE_PLATFORM 5
 
 #define OBJECT_TYPE_PORTAL	50
+#define OBJECT_TYPE_COLOX_BOX 51
 #define OBJECT_TYPE_GROUND 100
 
 #pragma region MARIO 

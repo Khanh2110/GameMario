@@ -10,6 +10,7 @@
 #include "Coin.h"
 #include "Platform.h"
 #include "Ground.h"
+#include "ColorBox.h"
 
 #include "SampleKeyEventHandler.h"
 
@@ -126,6 +127,13 @@ void CPlayScene::_ParseSection_OBJECTS(string line)
 		int w = atoi(tokens[3].c_str());
 		int h = atoi(tokens[4].c_str());
 		obj = new CGround(x, y, w, h);
+		break;
+	}
+	case OBJECT_TYPE_COLOX_BOX:
+	{
+		int w = atoi(tokens[3].c_str());
+		int h = atoi(tokens[4].c_str());
+		obj = new CColorBox(x, y, w, h);
 		break;
 	}
 	case OBJECT_TYPE_PLATFORM:
