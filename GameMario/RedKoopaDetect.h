@@ -2,20 +2,19 @@
 #include "GameObject.h"
 
 #define DETECT_GRAVITY	0.0008f
-#define DETECT_SIZE	8
+#define DETECT_SIZE	26
 
 class CRedKoopaDetect :
 	public CGameObject
 {
 public:
-	CRedKoopaDetect(float x, float y) : CGameObject(x, y) {
-	};
+	CRedKoopaDetect(float x, float y) : CGameObject(x, y) {};
 	void GetBoundingBox(float& l, float& t, float& r, float& b);
-	virtual void Update(DWORD dt, vector<LPGAMEOBJECT>* coObjects = NULL);
-
+	void Update(DWORD dt, vector<LPGAMEOBJECT>* coObjects = NULL);
+	void Render();
 	void OnNoCollision(DWORD dt);
 	void OnCollisionWith(LPCOLLISIONEVENT e);
 
-	virtual int IsCollidable() { return 1; };
-	virtual int IsBlocking() { return 0; }
+	int IsCollidable() { return 1; };
+	int IsBlocking() { return 0; }
 };

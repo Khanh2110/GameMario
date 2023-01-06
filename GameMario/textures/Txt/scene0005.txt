@@ -5,16 +5,22 @@ textures\Txt\coin.txt
 textures\Txt\cloud.txt
 textures\Txt\brick.txt
 textures\Txt\goomba.txt
+textures\Txt\redkoopa.txt
 [TILEMAP]
 textures\Txt\TileMap1_1.txt
 #
 [OBJECTS]
 # type	x	y	extra_settings per object type
-# type: 0 = Mario , 1 = Brick, 2 = Goomba, 3 = Koopas
+# type: 0 = Mario , 1 = Brick, 2 = Goomba, 3 = Koopas, 6 = Red Koopa
 # See OBJECT_TYPE constants in AssetIDs.h
 #
 # MARIO
 0	10	390
+
+#RED KOOPA
+6	550	350
+6	2100	350
+
 # GOOMBA
 2	450	400
 2	500	400

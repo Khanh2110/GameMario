@@ -11,6 +11,7 @@
 #include "Platform.h"
 #include "Ground.h"
 #include "ColorBox.h"
+#include "RedKoopa.h"
 
 #include "SampleKeyEventHandler.h"
 
@@ -134,6 +135,13 @@ void CPlayScene::_ParseSection_OBJECTS(string line)
 		int w = atoi(tokens[3].c_str());
 		int h = atoi(tokens[4].c_str());
 		obj = new CColorBox(x, y, w, h);
+		break;
+	}
+	case OBJECT_TYPE_RED_KOOPA:
+	{
+		LPGAMEOBJECT detect = new CRedKoopaDetect(x, y);
+		objects.push_back(detect);
+		obj = new CRedKoopa(x, y, detect);
 		break;
 	}
 	case OBJECT_TYPE_PLATFORM:
