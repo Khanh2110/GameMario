@@ -8,8 +8,8 @@ void CGround::Render()
 
 void CGround::GetBoundingBox(float& l, float& t, float& r, float& b)
 {
-	l = x;
-	t = y;
+	l = x - w / 2;
+	t = y - h / 2;
 	r = l + w;
 	b = t + h;
 }
