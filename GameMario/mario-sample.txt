@@ -11,9 +11,9 @@ height	240
 2	scene02.txt
 5	scene0005.txt
 
-# id	file 
+# id	file	R	B	G
 [TEXTURES]
--100	textures\bbox.png
-0	textures\mario.png
-10	textures\enemies.png
-20	textures\misc.png
+-100	textures\bbox.png	255	255	255
+0	textures\mario.png	255	255	255
+10	textures\enemies.png	255	255	255
+20	textures\misc.png	255	255	255
