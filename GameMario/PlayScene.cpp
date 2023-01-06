@@ -161,6 +161,29 @@ void CPlayScene::_ParseSection_OBJECTS(string line)
 	objects.push_back(obj);
 }
 
+/*
+	Parse a line in section [TILEMAP]
+*/
+void CPlayScene::_ParseSection_TILEMAP(string line)
+{
+	int ID, rowMap, columnMap, columnTile, rowTile, totalTiles;
+	LPCWSTR path = ToLPCWSTR(line);
+	ifstream f;
+	f.open(path);
+	f >> ID >> rowMap >> columnMap >> rowTile >> columnTile >> totalTiles;
+	int** tileMapData = new int* [rowMap];
+	for (int i = 0; i < rowMap; i++)
+	{
+		tileMapData[i] = new int[columnMap];
+		for (int j = 0; j < columnMap; j++)
+			f >> tileMapData[i][j];
+	}
+	f.close();
+
+	map = new CMap(ID, rowMap, columnMap, rowTile, columnTile, totalTiles, tileMapData);
+	map->AddTiles();
+}
+
 void CPlayScene::LoadAssets(LPCWSTR assetFile)
 {
 	DebugOut(L"[INFO] Start loading assets from : %s \n", assetFile);
@@ -269,7 +292,7 @@ void CPlayScene::Update(DWORD dt)
 
 void CPlayScene::Render()
 {
-	map->Render();
+	//map->Render();
 	for (int i = 0; i < objects.size(); i++)
 		objects[i]->Render();
 }
