@@ -2,7 +2,6 @@
 
 void CRedKoopa::Update(DWORD dt, vector<LPGAMEOBJECT>* coObjects)
 {
-	isOnPlatform = false;
 	vy += ay * dt;
 	vx += ax * dt;
 
@@ -21,7 +20,21 @@ void CRedKoopa::Update(DWORD dt, vector<LPGAMEOBJECT>* coObjects)
 			nx = -nx;
 			vx = -vx;
 		}
-		detect->SetPosition(x + (nx > 0 ? RED_KOOPA_BBOX_WIDTH / 2 + DETECT_SIZE / 2 : -RED_KOOPA_BBOX_WIDTH / 2 - DETECT_SIZE / 2), y);
+		detect->SetPosition(x + (nx > 0 ? RED_KOOPA_WALKING_BBOX_WIDTH / 2 + DETECT_SIZE / 2 : -RED_KOOPA_WALKING_BBOX_WIDTH / 2 - DETECT_SIZE / 2), y);
+	}
+	else if (this->state == RED_KOOPA_STATE_ROLLING)
+	{
+		CGame* g = CGame::GetInstance();
+		float cx, cy;
+		g->GetCamPos(cx, cy);
+		float boundary_left, boundary_right;
+		boundary_left = cx;
+		boundary_right = cx + g->GetBackBufferWidth();
+		if (x - RED_KOOPA_ROLLING_BBOX_WIDTH / 2 < boundary_left || x + RED_KOOPA_ROLLING_BBOX_WIDTH / 2 > boundary_right)
+		{
+			nx = -nx;
+			vx = -vx;
+		}
 	}
 }
 
@@ -59,18 +72,18 @@ void CRedKoopa::GetBoundingBox(float& left, float& top, float& right, float& bot
 {
 	if (state == RED_KOOPA_STATE_WALKING)
 	{
-		left = x - RED_KOOPA_BBOX_WIDTH / 2;
-		top = y - RED_KOOPA_BBOX_HEIGHT / 2;
-		right = left + RED_KOOPA_BBOX_WIDTH;
-		bottom = top + RED_KOOPA_BBOX_HEIGHT;
+		left = x - RED_KOOPA_WALKING_BBOX_WIDTH / 2;
+		top = y - RED_KOOPA_WALKING_BBOX_HEIGHT / 2;
+		right = left + RED_KOOPA_WALKING_BBOX_WIDTH;
+		bottom = top + RED_KOOPA_WALKING_BBOX_HEIGHT;
 	}
-	//else //rolling
-	//{
-	//	left = x - RED_KOOPA_BBOX_WIDTH / 2;
-	//	top = y - RED_KOOPA_BBOX_HEIGHT / 2;
-	//	right = left + RED_KOOPA_BBOX_WIDTH;
-	//	bottom = top + RED_KOOPA_BBOX_HEIGHT;
-	//}
+	else //rolling
+	{
+		left = x - RED_KOOPA_ROLLING_BBOX_WIDTH / 2;
+		top = y - RED_KOOPA_ROLLING_BBOX_HEIGHT / 2;
+		right = left + RED_KOOPA_ROLLING_BBOX_WIDTH;
+		bottom = top + RED_KOOPA_ROLLING_BBOX_HEIGHT;
+	}
 }
 
 void CRedKoopa::SetState(int state)
@@ -78,17 +91,21 @@ void CRedKoopa::SetState(int state)
 	CGameObject::SetState(state);
 	switch (state)
 	{
-	case RED_KOOPA_STATE_WALKING:
-		if (nx < 0)
-			vx = -RED_KOOPA_WALKING_SPEED;
-		else if (nx > 0)
-			vx = RED_KOOPA_WALKING_SPEED;
-		break;
-	case RED_KOOPA_STATE_ROLLING:
-		if (nx < 0)
-			vx = -RED_KOOPA_ROLLING_SPEED;
-		else if (nx > 0)
-			vx = RED_KOOPA_ROLLING_SPEED;
-		break;
+		case RED_KOOPA_STATE_WALKING:
+		{
+			if (nx < 0)
+				vx = -RED_KOOPA_WALKING_SPEED;
+			else if (nx > 0)
+				vx = RED_KOOPA_WALKING_SPEED;
+			break;
+		}
+		case RED_KOOPA_STATE_ROLLING:
+		{
+			if (nx < 0)
+				vx = -RED_KOOPA_ROLLING_SPEED;
+			else if (nx > 0)
+				vx = RED_KOOPA_ROLLING_SPEED;
+			break;
+		}
 	}
 }

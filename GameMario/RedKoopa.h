@@ -5,8 +5,10 @@
 #define RED_KOOPA_STATE_ROLLING			2
 #define RED_KOOPA_STATE_DIE	    		3
 
-#define RED_KOOPA_BBOX_WIDTH	    	16
-#define RED_KOOPA_BBOX_HEIGHT    		26
+#define RED_KOOPA_WALKING_BBOX_WIDTH	    	16
+#define RED_KOOPA_WALKING_BBOX_HEIGHT    		26
+#define RED_KOOPA_ROLLING_BBOX_WIDTH	16
+#define RED_KOOPA_ROLLING_BBOX_HEIGHT   18
 
 #define ID_ANI_RED_KOOPA_WALKING_LEFT 1701
 #define ID_ANI_RED_KOOPA_WALKING_RIGHT 1702
@@ -20,7 +22,6 @@ protected:
     float ax;
     float ay;
     LPGAMEOBJECT detect;
-    BOOLEAN isOnPlatform = false;
 public:
     CRedKoopa(float x, float y, LPGAMEOBJECT detect) : CGameObject(x, y) {
         SetState(RED_KOOPA_STATE_WALKING);
