@@ -52,7 +52,7 @@ void CMap::Render()
 		for (int CurrentColumn = BeginColumn; CurrentColumn < EndColumn; CurrentColumn++)
 		{
 			int index = TileMap[CurrentRow][CurrentColumn] - 1;
-			Tiles.at(index)->Draw((float)(CurrentColumn * TILE_WIDTH), (float)(CurrentRow * TILE_HEIGHT));
+			Tiles.at(index)->Draw((float)(CurrentColumn * TILE_WIDTH), (float)(CurrentRow * TILE_HEIGHT), "TILE");
 		}
 }
 
