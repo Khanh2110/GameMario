@@ -14,10 +14,11 @@
 #define OBJECT_TYPE_GOOMBA	2
 #define OBJECT_TYPE_KOOPAS	3
 #define OBJECT_TYPE_COIN 4
+
 #define OBJECT_TYPE_PLATFORM 5
 
 #define OBJECT_TYPE_PORTAL	50
-
+#define OBJECT_TYPE_GROUND 100
 
 #pragma region MARIO 
 

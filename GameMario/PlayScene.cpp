@@ -9,6 +9,7 @@
 #include "Portal.h"
 #include "Coin.h"
 #include "Platform.h"
+#include "Ground.h"
 
 #include "SampleKeyEventHandler.h"
 
@@ -120,7 +121,13 @@ void CPlayScene::_ParseSection_OBJECTS(string line)
 	case OBJECT_TYPE_GOOMBA: obj = new CGoomba(x, y); break;
 	case OBJECT_TYPE_BRICK: obj = new CBrick(x, y); break;
 	case OBJECT_TYPE_COIN: obj = new CCoin(x, y); break;
-
+	case OBJECT_TYPE_GROUND:
+	{
+		int w = atoi(tokens[3].c_str());
+		int h = atoi(tokens[4].c_str());
+		obj = new CGround(x, y, w, h);
+		break;
+	}
 	case OBJECT_TYPE_PLATFORM:
 	{
 
@@ -285,9 +292,9 @@ void CPlayScene::Update(DWORD dt)
 	cy -= game->GetBackBufferHeight() / 2;
 
 	if (cx < 0) cx = 0;
-	//if (cx +mario_width> map_width) cx = map_width-mario_width;
+	if (cx +MARIO_BIG_BBOX_WIDTH > map->GetMapWidth()) cx = map->GetMapWidth() - MARIO_BIG_BBOX_WIDTH -2;
 	if (cy < 0) cy = 0;
-	//if (cy +mario_height> map_height) cy = map_height-mario_height;
+	if (cy + MARIO_BIG_BBOX_HEIGHT > map->GetMapHeight()) cy = map->GetMapHeight() - MARIO_BIG_BBOX_HEIGHT - 2;
 	CGame::GetInstance()->SetCamPos(cx, cy);
 
 	PurgeDeletedObjects();
