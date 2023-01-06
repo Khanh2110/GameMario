@@ -1,7 +1,6 @@
 #include "Map.h"
 #include "Utils.h"
 #include "Define.h"
-#include "Camera.h"
 #include "Textures.h"
 #include "Game.h"
 
