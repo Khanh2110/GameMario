@@ -24,7 +24,8 @@ CPlayScene::CPlayScene(int id, LPCWSTR filePath) :
 
 #define SCENE_SECTION_UNKNOWN -1
 #define SCENE_SECTION_ASSETS	1
-#define SCENE_SECTION_OBJECTS	2
+#define SCENE_SECTION_TILEMAP	2
+#define SCENE_SECTION_OBJECTS	3
 
 #define ASSETS_SECTION_UNKNOWN -1
 #define ASSETS_SECTION_SPRITES 1
@@ -236,6 +237,7 @@ void CPlayScene::Load()
 
 		if (line[0] == '#') continue;	// skip comment lines	
 		if (line == "[ASSETS]") { section = SCENE_SECTION_ASSETS; continue; };
+		if (line == "[TILEMAP]") { section = SCENE_SECTION_TILEMAP; continue; };
 		if (line == "[OBJECTS]") { section = SCENE_SECTION_OBJECTS; continue; };
 		if (line[0] == '[') { section = SCENE_SECTION_UNKNOWN; continue; }
 
@@ -245,7 +247,8 @@ void CPlayScene::Load()
 		switch (section)
 		{
 		case SCENE_SECTION_ASSETS: _ParseSection_ASSETS(line); break;
-		case SCENE_SECTION_OBJECTS: _ParseSection_OBJECTS(line); break;
+		case SCENE_SECTION_OBJECTS: _ParseSection_OBJECTS(line); break; 
+		case SCENE_SECTION_TILEMAP: _ParseSection_TILEMAP(line); break;
 		}
 	}
 
@@ -292,7 +295,7 @@ void CPlayScene::Update(DWORD dt)
 
 void CPlayScene::Render()
 {
-	//map->Render();
+	map->Render();
 	for (int i = 0; i < objects.size(); i++)
 		objects[i]->Render();
 }
