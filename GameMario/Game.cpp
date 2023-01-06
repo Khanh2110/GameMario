@@ -535,14 +535,12 @@ void CGame::_ParseSection_TEXTURES(string line)
 {
 	vector<string> tokens = split(line);
 
-	if (tokens.size() < 5) return;
+	if (tokens.size() < 2) return;
 
 	int texID = atoi(tokens[0].c_str());
 	wstring path = ToWSTR(tokens[1]);
-	int R = atoi(tokens[2].c_str());
-	int G = atoi(tokens[3].c_str());
-	int B = atoi(tokens[4].c_str());
-	CTextures::GetInstance()->Add(texID, path.c_str(), D3DXCOLOR(R, G, B, 255));
+
+	CTextures::GetInstance()->Add(texID, path.c_str());
 }
 
 
