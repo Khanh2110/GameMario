@@ -17,3 +17,4 @@ height	240
 0	textures\mario.png	255	255	255
 10	textures\enemies.png	255	255	255
 20	textures\misc.png	255	255	255
+30	textures\MarioFull.png	0	255	255
