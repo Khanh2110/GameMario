@@ -285,16 +285,38 @@ void CPlayScene::Update(DWORD dt)
 
 	// Update camera to follow mario
 	float cx, cy;
-	player->GetPosition(cx, cy);
+	float mario_x, mario_y;
+	player->GetPosition(mario_x, mario_y);
 
 	CGame* game = CGame::GetInstance();
-	cx -= game->GetBackBufferWidth() / 2;
-	cy -= game->GetBackBufferHeight() / 2;
+	//game->GetCamPos(cx, cy);
+	//if (mario_x - cx < game->GetBackBufferWidth() / 2) {
+	//	cx = mario_x - game->GetBackBufferWidth() / 2;
+	//}
+	//if (mario_y - cy < game->GetBackBufferHeight() / 2) {
+	//	cy = mario_y - game->GetBackBufferHeight() / 2;
+	//}
+	//if (cx < 0) {
+	//	cx = 0;
+	//}
+	//if (cx > map->GetMapWidth() - game->GetBackBufferWidth()) {
+	//	cx = map->GetMapWidth() - game->GetBackBufferWidth();
+	//}
+	//if (cy < 0) {
+	//	cy = 0;
+	//}
+	//if (cy > map->GetMapHeight() - game->GetBackBufferHeight()) {
+	//	cy = map->GetMapHeight() - game->GetBackBufferHeight();
+	//}
+	cx = mario_x - game->GetBackBufferWidth() / 2;
+	cy = mario_y - game->GetBackBufferHeight() / 2;
 
 	if (cx < 0) cx = 0;
-	if (cx +MARIO_BIG_BBOX_WIDTH > map->GetMapWidth()) cx = map->GetMapWidth() - MARIO_BIG_BBOX_WIDTH -2;
+	if (cx + game->GetBackBufferWidth()> map->GetMapWidth()) cx = map->GetMapWidth() - game->GetBackBufferWidth();
 	if (cy < 0) cy = 0;
-	if (cy + MARIO_BIG_BBOX_HEIGHT > map->GetMapHeight()) cy = map->GetMapHeight() - MARIO_BIG_BBOX_HEIGHT - 2;
+	if (cy + game->GetBackBufferHeight()> map->GetMapHeight()) cy = map->GetMapHeight() - game->GetBackBufferHeight();
+	//DebugOut(L"cx: %d", cx);
+	//DebugOut(L"cy: %d", cy);
 	CGame::GetInstance()->SetCamPos(cx, cy);
 
 	PurgeDeletedObjects();
