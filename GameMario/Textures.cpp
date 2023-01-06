@@ -17,7 +17,7 @@ CTextures* CTextures::GetInstance()
 	return __instance;
 }
 
-void CTextures::Add(int id, LPCWSTR filePath)
+void CTextures::Add(int id, LPCWSTR filePath, D3DCOLOR transparentColor)
 {
 	textures[id] = CGame::GetInstance()->LoadTexture(filePath);
 }
