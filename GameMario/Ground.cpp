@@ -2,7 +2,7 @@
 
 void CGround::Render()
 {
-	CAnimations* animations = CAnimations::GetInstance();
+	//CAnimations* animations = CAnimations::GetInstance();
 	RenderBoundingBox();
 }
 
